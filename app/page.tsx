@@ -10,11 +10,12 @@ type ActionItem = {
   event_text: string | null;
   updated_at: string | null;
   created_at: string | null;
+  is_completed: boolean | null;
 };
 
 export default function Home() {
   const [actions, setActions] = useState<ActionItem[]>([]);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState<"pending" | "completed">("pending");
 
   useEffect(() => {
     fetchActions();
@@ -37,19 +38,36 @@ export default function Home() {
   const markDone = async (id: string) => {
     const { error } = await supabase
       .from("action_items")
-      .delete()
+      .update({ is_completed: true })
       .eq("id", id);
 
     if (error) {
-      console.error("Error deleting action:", error);
+      console.error("Error marking action complete:", error);
       return;
     }
 
     fetchActions();
   };
 
-  const filteredActions =
-    filter === "all" ? actions : actions;
+  const markPending = async (id: string) => {
+    const { error } = await supabase
+      .from("action_items")
+      .update({ is_completed: false })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error marking action pending:", error);
+      return;
+    }
+
+    fetchActions();
+  };
+
+  const filteredActions = actions.filter((action) =>
+    filter === "pending"
+      ? !action.is_completed
+      : Boolean(action.is_completed)
+  );
 
   return (
     <main className="min-h-screen bg-gray-100 p-6">
@@ -59,22 +77,21 @@ export default function Home() {
 
       <div className="mb-6 flex gap-3">
         <button
-          onClick={() => setFilter("all")}
-          className="rounded bg-gray-300 px-4 py-2 text-white"
+          onClick={() => setFilter("pending")}
+          className={`rounded px-4 py-2 text-white ${
+            filter === "pending" ? "bg-blue-500" : "bg-blue-300"
+          }`}
         >
-          All
+          Pending
         </button>
+
         <button
-          onClick={() => setFilter("unassigned")}
-          className="rounded bg-blue-400 px-4 py-2 text-white"
+          onClick={() => setFilter("completed")}
+          className={`rounded px-4 py-2 text-white ${
+            filter === "completed" ? "bg-gray-500" : "bg-gray-300"
+          }`}
         >
-          Unassigned
-        </button>
-        <button
-          onClick={() => setFilter("done")}
-          className="rounded bg-green-400 px-4 py-2 text-white"
-        >
-          Done
+          Completed
         </button>
       </div>
 
@@ -105,12 +122,21 @@ export default function Home() {
               </div>
             </div>
 
-            <button
-              onClick={() => markDone(action.id)}
-              className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-            >
-              Done
-            </button>
+            {!action.is_completed ? (
+              <button
+                onClick={() => markDone(action.id)}
+                className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+              >
+                Done
+              </button>
+            ) : (
+              <button
+                onClick={() => markPending(action.id)}
+                className="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
+              >
+                Reopen
+              </button>
+            )}
           </div>
         ))}
       </div>
