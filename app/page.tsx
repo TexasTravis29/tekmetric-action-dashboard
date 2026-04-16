@@ -3,102 +3,117 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
+type ActionItem = {
+  id: string;
+  ro: string;
+  custom_label: string | null;
+  event_text: string | null;
+  updated_at: string | null;
+  created_at: string | null;
+};
+
 export default function Home() {
-  const [actions, setActions] = useState<any[]>([]);
+  const [actions, setActions] = useState<ActionItem[]>([]);
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-  fetchActions();
-
-  const interval = setInterval(() => {
     fetchActions();
-  }, 5000); // every 5 seconds
-
-  return () => clearInterval(interval);
-}, []);
+  }, []);
 
   const fetchActions = async () => {
     const { data, error } = await supabase
       .from("action_items")
-      .select("*");
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error(error);
-    } else {
-      setActions(data || []);
+      console.error("Error fetching actions:", error);
+      return;
     }
+
+    setActions(data || []);
   };
 
   const markDone = async (id: string) => {
     const { error } = await supabase
       .from("action_items")
-      .update({ status: "done" })
+      .delete()
       .eq("id", id);
 
     if (error) {
-      console.error(error);
-    } else {
-      fetchActions();
+      console.error("Error deleting action:", error);
+      return;
     }
+
+    fetchActions();
   };
 
   const filteredActions =
-    filter === "all"
-      ? actions
-      : actions.filter((a) => a.status === filter);
+    filter === "all" ? actions : actions;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-3xl font-bold mb-6">
+    <main className="min-h-screen bg-gray-100 p-6">
+      <h1 className="mb-6 text-4xl font-bold text-gray-800">
         Tekmetric Action Dashboard
       </h1>
 
-      <div className="mb-4 flex gap-2">
+      <div className="mb-6 flex gap-3">
         <button
           onClick={() => setFilter("all")}
-          className="px-3 py-1 bg-gray-300 rounded"
+          className="rounded bg-gray-300 px-4 py-2 text-white"
         >
           All
         </button>
-
         <button
           onClick={() => setFilter("unassigned")}
-          className="px-3 py-1 bg-blue-300 rounded"
+          className="rounded bg-blue-400 px-4 py-2 text-white"
         >
           Unassigned
         </button>
-
         <button
           onClick={() => setFilter("done")}
-          className="px-3 py-1 bg-green-300 rounded"
+          className="rounded bg-green-400 px-4 py-2 text-white"
         >
           Done
         </button>
       </div>
 
       <div className="space-y-4">
-        {filteredActions.map((action, index) => (
+        {filteredActions.map((action) => (
           <div
-            key={action.id ?? index}
-            className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
+            key={action.id}
+            className="flex items-start justify-between rounded-lg bg-white p-4 shadow"
           >
             <div>
-              <p className="font-semibold">{action.title}</p>
-              <p className="text-sm text-gray-500">
-                {action.ro} • {action.customer}
-              </p>
-              <p className="text-xs mt-1">{action.status}</p>
+              <div className="text-lg font-semibold text-gray-800">
+                RO #{action.ro}
+              </div>
+
+              <div className="mt-1 text-sm text-blue-600">
+                {action.custom_label || "No Label"}
+              </div>
+
+              <div className="mt-2 text-sm text-gray-700">
+                {action.event_text || "No Event Text"}
+              </div>
+
+              <div className="mt-2 text-xs text-gray-500">
+                Updated:{" "}
+                {action.updated_at
+                  ? new Date(action.updated_at).toLocaleString()
+                  : "No Updated Date"}
+              </div>
             </div>
 
             <button
               onClick={() => markDone(action.id)}
-              className="bg-green-500 text-white px-3 py-1 rounded"
+              className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
             >
               Done
             </button>
           </div>
         ))}
       </div>
-    </div>
+    </main>
   );
 }
