@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     const activeRow = activeRows?.[0];
 
-    // If exact same label is already active, ignore duplicate webhook
+    // Ignore duplicate webhook if same label is already active
     if (activeRow && activeRow.custom_label === customLabel) {
       return Response.json({
         ok: true,
@@ -57,10 +57,17 @@ export async function POST(request: Request) {
 
     // Close prior active label for this RO
     if (activeRow) {
-      const startedAt = new Date(activeRow.started_at);
-      const endedAt = new Date(updatedAt);
-      const durationMinutes =
-        (endedAt.getTime() - startedAt.getTime()) / 1000 / 60;
+      let durationMinutes = null;
+
+      if (activeRow.started_at) {
+        const startedAt = new Date(activeRow.started_at);
+        const endedAt = new Date(updatedAt);
+
+        durationMinutes =
+          (endedAt.getTime() - startedAt.getTime()) / 1000 / 60;
+
+        durationMinutes = Math.round(durationMinutes);
+      }
 
       const { error: closeError } = await supabase
         .from("action_items")
@@ -80,7 +87,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // If label is excluded, stop here after closing previous label
+    // Stop tracking if this label should not be tracked
     if (EXCLUDED_LABELS.includes(customLabel)) {
       return Response.json({
         ok: true,
