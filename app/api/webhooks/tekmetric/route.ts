@@ -18,31 +18,35 @@ export async function POST(request: Request) {
 
     const eventText = String(body.event || "").toLowerCase();
 
-    if (eventText.includes("work approved")) {
-      title = "Verify parts";
-      actionType = "verify_parts";
-    }
-
-    if (eventText.includes("inspection") && eventText.includes("complete")) {
-      title = "Advisor review and present";
+    // 🔧 INSPECTION COMPLETED (based on real payload)
+    if (body.inspectionId && body.completedDate) {
+      title = "Inspection completed";
       actionType = "advisor_review_present";
     }
 
-    if (eventText.includes("customer viewed inspection")) {
-      title = "Advisor follow up with customer";
-      actionType = "advisor_follow_up";
-    }
-
+    // 🔧 REPAIR ORDER COMPLETED
     if (eventText.includes("repair order") && eventText.includes("completed")) {
       title = "Confirm customer pick up time";
       actionType = "confirm_pickup_time";
     }
 
+    // 🔧 WORK APPROVED (keep for later)
+    if (eventText.includes("work approved")) {
+      title = "Verify parts";
+      actionType = "verify_parts";
+    }
+
+    // 🔧 RO number (handle both payload types)
+    const roNumber =
+      body.repairOrderNumber?.toString() ||
+      body.repairOrderId?.toString() ||
+      "N/A";
+
     const { error } = await supabase.from("action_items").insert([
       {
         title,
-        customer: body.customerName || body.customerId?.toString() || "Unknown",
-        ro: body.repairOrderNumber?.toString() || body.ro?.toString() || "N/A",
+        ro: roNumber,
+        customer: "N/A", // 👈 intentionally ignored
         status: "unassigned",
         action_type: actionType,
         event_received_at: loggedAt,
