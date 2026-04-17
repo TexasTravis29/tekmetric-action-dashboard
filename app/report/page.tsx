@@ -34,6 +34,26 @@ type RoSummary = {
   duration_minutes: number | null;
 };
 
+const MAX_REASONABLE_MINUTES = 60 * 24 * 30; // 30 days
+
+const normalizeLabel = (label: string | null | undefined) => {
+  const cleaned = (label || "No Label").trim().replace(/\s+/g, " ");
+
+  if (cleaned === "R.A.C.E Inspection") return "R.A.C.E. Inspection";
+
+  return cleaned || "No Label";
+};
+
+const isValidDuration = (minutes: number | null | undefined) => {
+  return (
+    minutes !== null &&
+    minutes !== undefined &&
+    Number.isFinite(minutes) &&
+    minutes >= 0 &&
+    minutes <= MAX_REASONABLE_MINUTES
+  );
+};
+
 export default function ReportPage() {
   const [rows, setRows] = useState<ActionItem[]>([]);
   const [view, setView] = useState<"ro" | "label">("ro");
@@ -57,22 +77,28 @@ export default function ReportPage() {
     setRows(data || []);
   };
 
+  const validRows = useMemo(() => {
+    return rows.filter((row) => isValidDuration(row.duration_minutes));
+  }, [rows]);
+
   const roRows: RoSummary[] = useMemo(() => {
-    return rows.map((row) => ({
+    return validRows.map((row) => ({
       ro: row.ro,
-      label: row.custom_label || "No Label",
+      label: normalizeLabel(row.custom_label),
       started_at: row.started_at,
       ended_at: row.ended_at,
       duration_minutes: row.duration_minutes,
     }));
-  }, [rows]);
+  }, [validRows]);
 
   const labelRows: LabelSummary[] = useMemo(() => {
     const map = new Map<string, { total: number; count: number }>();
 
-    for (const row of rows) {
-      const label = row.custom_label || "No Label";
-      const minutes = row.duration_minutes || 0;
+    for (const row of validRows) {
+      const label = normalizeLabel(row.custom_label);
+      const minutes = row.duration_minutes;
+
+      if (!isValidDuration(minutes)) continue;
 
       const current = map.get(label) || { total: 0, count: 0 };
       current.total += minutes;
@@ -88,7 +114,7 @@ export default function ReportPage() {
         avgMinutes: Math.round(value.total / value.count),
       }))
       .sort((a, b) => b.avgMinutes - a.avgMinutes);
-  }, [rows]);
+  }, [validRows]);
 
   const maxAvg = Math.max(...labelRows.map((r) => r.avgMinutes), 1);
 
@@ -107,7 +133,10 @@ export default function ReportPage() {
       ),
     ];
 
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -159,16 +188,23 @@ export default function ReportPage() {
         </button>
       </div>
 
+      <div className="mb-4 rounded-lg bg-white p-4 shadow">
+        <p className="text-sm text-gray-700">
+          Showing <span className="font-semibold">{validRows.length}</span> valid tracked
+          rows out of <span className="font-semibold">{rows.length}</span> total rows.
+        </p>
+      </div>
+
       {view === "ro" ? (
         <div className="overflow-x-auto rounded-lg bg-white shadow">
-          <table className="min-w-full text-sm">
+          <table className="min-w-full text-sm text-gray-900">
             <thead className="bg-slate-100 text-left">
               <tr>
-                <th className="px-4 py-3">RO</th>
-                <th className="px-4 py-3">Label</th>
-                <th className="px-4 py-3">Started</th>
-                <th className="px-4 py-3">Ended</th>
-                <th className="px-4 py-3">Minutes</th>
+                <th className="px-4 py-3 font-semibold">RO</th>
+                <th className="px-4 py-3 font-semibold">Label</th>
+                <th className="px-4 py-3 font-semibold">Started</th>
+                <th className="px-4 py-3 font-semibold">Ended</th>
+                <th className="px-4 py-3 font-semibold">Minutes</th>
               </tr>
             </thead>
             <tbody>
@@ -177,9 +213,7 @@ export default function ReportPage() {
                   <td className="px-4 py-3">{row.ro}</td>
                   <td className="px-4 py-3">{row.label}</td>
                   <td className="px-4 py-3">
-                    {row.started_at
-                      ? new Date(row.started_at).toLocaleString()
-                      : ""}
+                    {row.started_at ? new Date(row.started_at).toLocaleString() : ""}
                   </td>
                   <td className="px-4 py-3">
                     {row.ended_at ? new Date(row.ended_at).toLocaleString() : ""}
@@ -193,13 +227,13 @@ export default function ReportPage() {
       ) : (
         <div className="space-y-6">
           <div className="overflow-x-auto rounded-lg bg-white shadow">
-            <table className="min-w-full text-sm">
+            <table className="min-w-full text-sm text-gray-900">
               <thead className="bg-slate-100 text-left">
                 <tr>
-                  <th className="px-4 py-3">Label</th>
-                  <th className="px-4 py-3">Count</th>
-                  <th className="px-4 py-3">Total Minutes</th>
-                  <th className="px-4 py-3">Avg Minutes</th>
+                  <th className="px-4 py-3 font-semibold">Label</th>
+                  <th className="px-4 py-3 font-semibold">Count</th>
+                  <th className="px-4 py-3 font-semibold">Total Minutes</th>
+                  <th className="px-4 py-3 font-semibold">Avg Minutes</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,17 +250,15 @@ export default function ReportPage() {
           </div>
 
           <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-2xl font-bold text-gray-800">
-              Average Time by Label
-            </h2>
+            <h2 className="mb-4 text-2xl font-bold text-gray-800">Average Time by Label</h2>
 
             <div className="space-y-4">
               {labelRows.map((row) => {
-                const widthPercent = (row.avgMinutes / maxAvg) * 100;
+                const widthPercent = maxAvg > 0 ? (row.avgMinutes / maxAvg) * 100 : 0;
 
                 return (
                   <div key={row.label}>
-                    <div className="mb-1 flex justify-between text-sm text-gray-700">
+                    <div className="mb-1 flex justify-between text-sm font-medium text-gray-900">
                       <span>{row.label}</span>
                       <span>{row.avgMinutes} min</span>
                     </div>
