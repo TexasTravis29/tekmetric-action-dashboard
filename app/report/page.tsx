@@ -216,12 +216,14 @@ export default function ReportPage() {
       const label = normalizeLabel(row.custom_label);
       const minutes = row.duration_minutes;
 
-      if (!isValidDuration(minutes)) continue;
+if (!isValidDuration(minutes)) continue;
 
-      const current = map.get(label) || { total: 0, count: 0 };
-      current.total += minutes;
-      current.count += 1;
-      map.set(label, current);
+const safeMinutes = minutes ?? 0;
+
+const current = map.get(label) || { total: 0, count: 0 };
+current.total += safeMinutes;
+current.count += 1;
+map.set(label, current);
     }
 
     return Array.from(map.entries()).map(([label, value]) => ({
