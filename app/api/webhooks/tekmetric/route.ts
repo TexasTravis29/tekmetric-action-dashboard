@@ -159,6 +159,7 @@ export async function POST(request: Request) {
         action_type: "label_update",
         event_received_at: eventTime,
         raw_payload: body,
+        shop_id: (body as any)?.data?.shopId ?? null,
       },
     ]);
 
