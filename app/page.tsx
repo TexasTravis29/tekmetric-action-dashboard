@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "../lib/supabase";
 
 type ActionItem = {
   id: string;
@@ -16,24 +18,94 @@ type ActionItem = {
   ended_at: string | null;
   duration_minutes: number | null;
   completed_at: string | null;
+  shop_id: number | null;
 };
 
 export default function Home() {
+  const router = useRouter();
+
   const [actions, setActions] = useState<ActionItem[]>([]);
   const [filter, setFilter] = useState<"pending" | "completed">("pending");
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState("");
+  const [shopName, setShopName] = useState("");
 
   useEffect(() => {
-    fetchActions();
+    loadDashboard();
   }, []);
+
+  const loadDashboard = async () => {
+    try {
+      setPageLoading(true);
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        router.push("/login");
+        return;
+      }
+
+      setUserEmail(user.email || "");
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("shop_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error("Profile lookup failed:", profileError);
+        router.push("/login");
+        return;
+      }
+
+      const { data: shop, error: shopError } = await supabase
+        .from("shops")
+        .select("id, shop_name")
+        .eq("id", profile.shop_id)
+        .single();
+
+      if (shopError || !shop) {
+        console.error("Shop lookup failed:", shopError);
+        router.push("/login");
+        return;
+      }
+
+      setShopName(shop.shop_name || "");
+      await fetchActions();
+    } catch (error) {
+      console.error("Error loading dashboard:", error);
+    } finally {
+      setPageLoading(false);
+    }
+  };
 
   const fetchActions = async () => {
     try {
-      const res = await fetch("/api/action-items", { cache: "no-store" });
+      const sessionResult = await supabase.auth.getSession();
+      const accessToken = sessionResult.data.session?.access_token;
+
+      const res = await fetch("/api/action-items", {
+        cache: "no-store",
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : {},
+      });
 
       if (!res.ok) {
         const errorText = await res.text();
         console.error("Error fetching actions:", errorText);
+
+        if (res.status === 401) {
+          router.push("/login");
+        }
+
         return;
       }
 
@@ -56,9 +128,15 @@ export default function Home() {
     }
 
     try {
+      const sessionResult = await supabase.auth.getSession();
+      const accessToken = sessionResult.data.session?.access_token;
+
       const res = await fetch("/api/action-items", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           id: item.id,
           updates: {
@@ -85,9 +163,15 @@ export default function Home() {
 
   const markPending = async (id: string) => {
     try {
+      const sessionResult = await supabase.auth.getSession();
+      const accessToken = sessionResult.data.session?.access_token;
+
       const res = await fetch("/api/action-items", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           id,
           updates: {
@@ -111,12 +195,14 @@ export default function Home() {
 
   const clearAll = async () => {
     const pendingItems = actions.filter((a) => !a.is_completed);
-
     if (pendingItems.length === 0) return;
 
     setLoading(true);
 
     try {
+      const sessionResult = await supabase.auth.getSession();
+      const accessToken = sessionResult.data.session?.access_token;
+
       for (const item of pendingItems) {
         const now = new Date();
         let durationMinutes = item.duration_minutes;
@@ -130,7 +216,10 @@ export default function Home() {
 
         const res = await fetch("/api/action-items", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
           body: JSON.stringify({
             id: item.id,
             updates: {
@@ -155,18 +244,37 @@ export default function Home() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
   const filteredActions = actions.filter((action) =>
-    filter === "pending"
-      ? !action.is_completed
-      : Boolean(action.is_completed)
+    filter === "pending" ? !action.is_completed : Boolean(action.is_completed)
   );
+
+  if (pageLoading) {
+    return (
+      <main className="min-h-screen bg-gray-100 p-6">
+        <div className="mx-auto max-w-5xl rounded-lg bg-white p-6 shadow">
+          <p className="text-gray-700">Loading dashboard...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-100 p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-4xl font-bold text-gray-800">
-          Tekmetric Action Dashboard
-        </h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-800">
+            Tekmetric Action Dashboard
+          </h1>
+          <div className="mt-2 text-sm text-gray-600">
+            <div>Shop: {shopName || "Unknown Shop"}</div>
+            <div>User: {userEmail}</div>
+          </div>
+        </div>
 
         <div className="flex gap-3">
           <Link
@@ -182,6 +290,13 @@ export default function Home() {
             className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600 disabled:opacity-50"
           >
             {loading ? "Clearing..." : "Clear All"}
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="rounded bg-gray-700 px-4 py-2 text-white hover:bg-gray-800"
+          >
+            Logout
           </button>
         </div>
       </div>
@@ -262,6 +377,12 @@ export default function Home() {
             )}
           </div>
         ))}
+
+        {!filteredActions.length && (
+          <div className="rounded-lg bg-white p-6 text-center text-gray-500 shadow">
+            No action items found for this shop.
+          </div>
+        )}
       </div>
     </main>
   );
