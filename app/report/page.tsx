@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "../../lib/supabase";
 
 type ActionItem = {
   id: string;
@@ -16,6 +18,7 @@ type ActionItem = {
   ended_at: string | null;
   duration_minutes: number | null;
   completed_at: string | null;
+  shop_id: number | null;
 };
 
 type LabelSummary = {
@@ -89,6 +92,8 @@ const formatMinutes = (minutes: number) => {
 };
 
 export default function ReportPage() {
+  const router = useRouter();
+
   const [rows, setRows] = useState<ActionItem[]>([]);
   const [view, setView] = useState<"ro" | "label">("ro");
 
@@ -101,26 +106,97 @@ export default function ReportPage() {
   const [labelSortDirection, setLabelSortDirection] =
     useState<LabelSortDirection>("desc");
 
+  const [pageLoading, setPageLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState("");
+  const [shopName, setShopName] = useState("");
+  const [tekmetricShopId, setTekmetricShopId] = useState<number | null>(null);
+
   useEffect(() => {
-    fetchRows();
+    loadReportPage();
   }, []);
 
-  const fetchRows = async () => {
-  try {
-    const res = await fetch("/api/action-items", { cache: "no-store" });
+  const loadReportPage = async () => {
+    try {
+      setPageLoading(true);
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Error fetching report rows:", errorText);
-      return;
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        router.push("/login");
+        return;
+      }
+
+      setUserEmail(user.email || "");
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("shop_id, email")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error("Profile lookup failed:", profileError);
+        router.push("/login");
+        return;
+      }
+
+      const { data: shop, error: shopError } = await supabase
+        .from("shops")
+        .select("id, tekmetric_shop_id, shop_name")
+        .eq("id", profile.shop_id)
+        .single();
+
+      if (shopError || !shop) {
+        console.error("Shop lookup failed:", shopError);
+        router.push("/login");
+        return;
+      }
+
+      setShopName(shop.shop_name || "");
+      setTekmetricShopId(shop.tekmetric_shop_id);
+
+      const { data: actionData, error: actionError } = await supabase
+        .from("action_items")
+        .select("*")
+        .eq("shop_id", shop.tekmetric_shop_id)
+        .order("updated_at", { ascending: false });
+
+      if (actionError) {
+        console.error("Error fetching report rows:", actionError);
+        return;
+      }
+
+      setRows(actionData || []);
+    } catch (error) {
+      console.error("Error loading report rows:", error);
+    } finally {
+      setPageLoading(false);
     }
+  };
 
-    const data = await res.json();
-    setRows(data || []);
-  } catch (error) {
-    console.error("Error fetching report rows:", error);
-  }
-};
+  const fetchRows = async () => {
+    try {
+      if (!tekmetricShopId) return;
+
+      const { data, error } = await supabase
+        .from("action_items")
+        .select("*")
+        .eq("shop_id", tekmetricShopId)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching report rows:", error);
+        return;
+      }
+
+      setRows(data || []);
+    } catch (error) {
+      console.error("Error fetching report rows:", error);
+    }
+  };
 
   const validRows = useMemo(() => {
     return rows.filter((row) => {
@@ -217,14 +293,14 @@ export default function ReportPage() {
       const label = normalizeLabel(row.custom_label);
       const minutes = row.duration_minutes;
 
-if (!isValidDuration(minutes)) continue;
+      if (!isValidDuration(minutes)) continue;
 
-const safeMinutes = minutes ?? 0;
+      const safeMinutes = minutes ?? 0;
 
-const current = map.get(label) || { total: 0, count: 0 };
-current.total += safeMinutes;
-current.count += 1;
-map.set(label, current);
+      const current = map.get(label) || { total: 0, count: 0 };
+      current.total += safeMinutes;
+      current.count += 1;
+      map.set(label, current);
     }
 
     return Array.from(map.entries()).map(([label, value]) => ({
@@ -267,7 +343,10 @@ map.set(label, current);
   const currentAverageMinutes = useMemo(() => {
     if (!filteredRows.length) return 0;
 
-    const total = filteredRows.reduce((sum, row) => sum + (row.duration_minutes || 0), 0);
+    const total = filteredRows.reduce(
+      (sum, row) => sum + (row.duration_minutes || 0),
+      0
+    );
     return Math.round(total / filteredRows.length);
   }, [filteredRows]);
 
@@ -365,7 +444,9 @@ map.set(label, current);
     URL.revokeObjectURL(url);
   };
 
-  const applyPreset = (preset: "today" | "yesterday" | "last7" | "last30" | "thisMonth") => {
+  const applyPreset = (
+    preset: "today" | "yesterday" | "last7" | "last30" | "thisMonth"
+  ) => {
     const now = new Date();
 
     if (preset === "today") {
@@ -431,10 +512,32 @@ map.set(label, current);
     return labelSortDirection === "asc" ? " ▲" : " ▼";
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
+  if (pageLoading) {
+    return (
+      <main className="min-h-screen bg-gray-100 p-6">
+        <div className="mx-auto max-w-7xl rounded-lg bg-white p-6 shadow">
+          <p className="text-gray-700">Loading reports...</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gray-100 p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-4xl font-bold text-gray-800">Reports</h1>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-800">Reports</h1>
+          <div className="mt-2 text-sm text-gray-600">
+            <div>Shop: {shopName || "Unknown Shop"}</div>
+            <div>User: {userEmail}</div>
+            <div>Tekmetric Shop ID: {tekmetricShopId ?? "Unknown"}</div>
+          </div>
+        </div>
 
         <div className="flex gap-3">
           <Link
@@ -449,6 +552,13 @@ map.set(label, current);
             className="rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700"
           >
             Export CSV
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="rounded bg-gray-700 px-4 py-2 text-white hover:bg-gray-800"
+          >
+            Logout
           </button>
         </div>
       </div>
@@ -553,7 +663,9 @@ map.set(label, current);
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded border border-gray-200 bg-gray-50 p-3">
             <p className="text-sm text-gray-600">Filtered Rows</p>
-            <p className="text-2xl font-bold text-gray-900">{filteredRows.length}</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {filteredRows.length}
+            </p>
           </div>
 
           <div className="rounded border border-gray-200 bg-gray-50 p-3">
@@ -566,20 +678,25 @@ map.set(label, current);
           <div className="rounded border border-gray-200 bg-gray-50 p-3">
             <p className="text-sm text-gray-600">Previous Period Avg</p>
             <p className="text-2xl font-bold text-gray-900">
-              {previousPeriodRows.length ? formatMinutes(previousAverageMinutes) : "—"}
+              {previousPeriodRows.length
+                ? formatMinutes(previousAverageMinutes)
+                : "—"}
             </p>
           </div>
         </div>
 
         <div className="mt-4">
           <p className="text-sm text-gray-700">
-            Showing <span className="font-semibold">{filteredRows.length}</span> filtered valid
-            tracked rows out of <span className="font-semibold">{validRows.length}</span> valid
-            rows and <span className="font-semibold">{rows.length}</span> total rows.
+            Showing <span className="font-semibold">{filteredRows.length}</span>{" "}
+            filtered valid tracked rows out of{" "}
+            <span className="font-semibold">{validRows.length}</span> valid rows
+            and <span className="font-semibold">{rows.length}</span> total rows.
           </p>
 
           {comparisonText && (
-            <p className="mt-2 text-sm font-medium text-gray-800">{comparisonText}</p>
+            <p className="mt-2 text-sm font-medium text-gray-800">
+              {comparisonText}
+            </p>
           )}
         </div>
       </div>
@@ -703,7 +820,9 @@ map.set(label, current);
           </div>
 
           <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-2xl font-bold text-gray-800">Average Time by Label</h2>
+            <h2 className="mb-4 text-2xl font-bold text-gray-800">
+              Average Time by Label
+            </h2>
 
             <div className="space-y-4">
               {labelRows.map((row) => {
