@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../../lib/supabase";
 
 type ActionItem = {
   id: string;
@@ -107,19 +106,21 @@ export default function ReportPage() {
   }, []);
 
   const fetchRows = async () => {
-    const { data, error } = await supabase
-      .from("action_items")
-      .select("*")
-      .not("duration_minutes", "is", null)
-      .order("updated_at", { ascending: false });
+  try {
+    const res = await fetch("/api/action-items", { cache: "no-store" });
 
-    if (error) {
-      console.error("Error fetching report rows:", error);
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("Error fetching report rows:", errorText);
       return;
     }
 
+    const data = await res.json();
     setRows(data || []);
-  };
+  } catch (error) {
+    console.error("Error fetching report rows:", error);
+  }
+};
 
   const validRows = useMemo(() => {
     return rows.filter((row) => {
