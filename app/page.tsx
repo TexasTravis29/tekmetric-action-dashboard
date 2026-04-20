@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
 
 type ActionItem = {
   id: string;
@@ -29,17 +28,20 @@ export default function Home() {
   }, []);
 
   const fetchActions = async () => {
-    const { data, error } = await supabase
-      .from("action_items")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const res = await fetch("/api/action-items", { cache: "no-store" });
 
-    if (error) {
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Error fetching actions:", errorText);
+        return;
+      }
+
+      const data = await res.json();
+      setActions(data || []);
+    } catch (error) {
       console.error("Error fetching actions:", error);
-      return;
     }
-
-    setActions(data || []);
   };
 
   const markDone = async (item: ActionItem) => {
@@ -53,40 +55,58 @@ export default function Home() {
       );
     }
 
-    const { error } = await supabase
-      .from("action_items")
-      .update({
-        is_completed: true,
-        is_active: false,
-        ended_at: item.ended_at || now.toISOString(),
-        duration_minutes: durationMinutes,
-        completed_at: now.toISOString(),
-      })
-      .eq("id", item.id);
+    try {
+      const res = await fetch("/api/action-items", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: item.id,
+          updates: {
+            is_completed: true,
+            is_active: false,
+            ended_at: item.ended_at || now.toISOString(),
+            duration_minutes: durationMinutes,
+            completed_at: now.toISOString(),
+          },
+        }),
+      });
 
-    if (error) {
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Error marking action complete:", errorText);
+        return;
+      }
+
+      fetchActions();
+    } catch (error) {
       console.error("Error marking action complete:", error);
-      return;
     }
-
-    fetchActions();
   };
 
   const markPending = async (id: string) => {
-    const { error } = await supabase
-      .from("action_items")
-      .update({
-        is_completed: false,
-        completed_at: null,
-      })
-      .eq("id", id);
+    try {
+      const res = await fetch("/api/action-items", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          updates: {
+            is_completed: false,
+            completed_at: null,
+          },
+        }),
+      });
 
-    if (error) {
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Error marking action pending:", errorText);
+        return;
+      }
+
+      fetchActions();
+    } catch (error) {
       console.error("Error marking action pending:", error);
-      return;
     }
-
-    fetchActions();
   };
 
   const clearAll = async () => {
@@ -108,19 +128,24 @@ export default function Home() {
           );
         }
 
-        const { error } = await supabase
-          .from("action_items")
-          .update({
-            is_completed: true,
-            is_active: false,
-            ended_at: item.ended_at || now.toISOString(),
-            duration_minutes: durationMinutes,
-            completed_at: now.toISOString(),
-          })
-          .eq("id", item.id);
+        const res = await fetch("/api/action-items", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: item.id,
+            updates: {
+              is_completed: true,
+              is_active: false,
+              ended_at: item.ended_at || now.toISOString(),
+              duration_minutes: durationMinutes,
+              completed_at: now.toISOString(),
+            },
+          }),
+        });
 
-        if (error) {
-          console.error("Error clearing item:", error);
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("Error clearing item:", errorText);
         }
       }
 
