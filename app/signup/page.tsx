@@ -16,47 +16,38 @@ export default function SignupPage() {
   const [message, setMessage] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setMessage("");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+  setMessage("");
 
-    try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+  try {
+    const parsedTekmetricShopId = Number(shopId);
 
-      if (signUpError) throw signUpError;
-
-      const userId = data.user?.id;
-      if (!userId) {
-        setMessage("Account created. Check your email to confirm your account.");
-        return;
-      }
-
-      const parsedShopId = Number(shopId);
-
-      if (!parsedShopId || Number.isNaN(parsedShopId)) {
-        throw new Error("A valid shop ID is required.");
-      }
-
-      const { error: profileError } = await supabase.from("profiles").insert({
-        user_id: userId,
-        email,
-        shop_id: parsedShopId,
-      });
-
-      if (profileError) throw profileError;
-
-      setMessage("Account created successfully. You can now log in.");
-      router.push("/login");
-    } catch (err: any) {
-      setError(err.message || "Signup failed.");
-    } finally {
-      setLoading(false);
+    if (!parsedTekmetricShopId || Number.isNaN(parsedTekmetricShopId)) {
+      throw new Error("A valid Tekmetric Shop ID is required.");
     }
-  };
+
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          tekmetric_shop_id: parsedTekmetricShopId,
+        },
+      },
+    });
+
+    if (signUpError) throw signUpError;
+
+    setMessage("Account created successfully. You can now log in.");
+    router.push("/login");
+  } catch (err: any) {
+    setError(err.message || "Signup failed.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
@@ -86,7 +77,7 @@ export default function SignupPage() {
 
         <input
           type="number"
-          placeholder="Shop ID"
+          placeholder="Tekmetric Shop ID"
           value={shopId}
           onChange={(e) => setShopId(e.target.value)}
           className="w-full rounded border p-3"
