@@ -249,6 +249,13 @@ export default function Home() {
             Reports
           </Link>
 
+          <Link
+            href="/settings"
+            className="rounded bg-slate-700 px-4 py-2 text-white hover:bg-slate-800"
+          >
+            Settings
+          </Link>
+
           <button
             onClick={clearAll}
             disabled={loading}
