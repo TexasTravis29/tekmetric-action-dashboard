@@ -30,6 +30,7 @@ export default function Home() {
   const [pageLoading, setPageLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
   const [shopName, setShopName] = useState("");
+  const [tekmetricShopId, setTekmetricShopId] = useState<number | null>(null);
 
   useEffect(() => {
     loadDashboard();
@@ -65,7 +66,7 @@ export default function Home() {
 
       const { data: shop, error: shopError } = await supabase
         .from("shops")
-        .select("id, shop_name")
+        .select("id, tekmetric_shop_id, shop_name")
         .eq("id", profile.shop_id)
         .single();
 
@@ -76,7 +77,9 @@ export default function Home() {
       }
 
       setShopName(shop.shop_name || "");
-      await fetchActions();
+      setTekmetricShopId(shop.tekmetric_shop_id);
+
+      await fetchActions(shop.tekmetric_shop_id);
     } catch (error) {
       console.error("Error loading dashboard:", error);
     } finally {
@@ -84,32 +87,22 @@ export default function Home() {
     }
   };
 
-  const fetchActions = async () => {
+  const fetchActions = async (shopId?: number | null) => {
+    const idToUse = shopId ?? tekmetricShopId;
+    if (!idToUse) return;
+
     try {
-      const sessionResult = await supabase.auth.getSession();
-      const accessToken = sessionResult.data.session?.access_token;
+      const { data, error } = await supabase
+        .from("action_items")
+        .select("*")
+        .eq("shop_id", idToUse)
+        .order("created_at", { ascending: false });
 
-      const res = await fetch("/api/action-items", {
-        cache: "no-store",
-        headers: accessToken
-          ? {
-              Authorization: `Bearer ${accessToken}`,
-            }
-          : {},
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Error fetching actions:", errorText);
-
-        if (res.status === 401) {
-          router.push("/login");
-        }
-
+      if (error) {
+        console.error("Error fetching actions:", error);
         return;
       }
 
-      const data = await res.json();
       setActions(data || []);
     } catch (error) {
       console.error("Error fetching actions:", error);
@@ -128,30 +121,20 @@ export default function Home() {
     }
 
     try {
-      const sessionResult = await supabase.auth.getSession();
-      const accessToken = sessionResult.data.session?.access_token;
+      const { error } = await supabase
+        .from("action_items")
+        .update({
+          is_completed: true,
+          is_active: false,
+          ended_at: item.ended_at || now.toISOString(),
+          duration_minutes: durationMinutes,
+          completed_at: now.toISOString(),
+        })
+        .eq("id", item.id)
+        .eq("shop_id", tekmetricShopId);
 
-      const res = await fetch("/api/action-items", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        },
-        body: JSON.stringify({
-          id: item.id,
-          updates: {
-            is_completed: true,
-            is_active: false,
-            ended_at: item.ended_at || now.toISOString(),
-            duration_minutes: durationMinutes,
-            completed_at: now.toISOString(),
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Error marking action complete:", errorText);
+      if (error) {
+        console.error("Error marking action complete:", error);
         return;
       }
 
@@ -163,27 +146,17 @@ export default function Home() {
 
   const markPending = async (id: string) => {
     try {
-      const sessionResult = await supabase.auth.getSession();
-      const accessToken = sessionResult.data.session?.access_token;
+      const { error } = await supabase
+        .from("action_items")
+        .update({
+          is_completed: false,
+          completed_at: null,
+        })
+        .eq("id", id)
+        .eq("shop_id", tekmetricShopId);
 
-      const res = await fetch("/api/action-items", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        },
-        body: JSON.stringify({
-          id,
-          updates: {
-            is_completed: false,
-            completed_at: null,
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Error marking action pending:", errorText);
+      if (error) {
+        console.error("Error marking action pending:", error);
         return;
       }
 
@@ -200,11 +173,9 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const sessionResult = await supabase.auth.getSession();
-      const accessToken = sessionResult.data.session?.access_token;
+      const now = new Date();
 
       for (const item of pendingItems) {
-        const now = new Date();
         let durationMinutes = item.duration_minutes;
 
         if (item.started_at && !item.ended_at) {
@@ -214,27 +185,20 @@ export default function Home() {
           );
         }
 
-        const res = await fetch("/api/action-items", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-          body: JSON.stringify({
-            id: item.id,
-            updates: {
-              is_completed: true,
-              is_active: false,
-              ended_at: item.ended_at || now.toISOString(),
-              duration_minutes: durationMinutes,
-              completed_at: now.toISOString(),
-            },
-          }),
-        });
+        const { error } = await supabase
+          .from("action_items")
+          .update({
+            is_completed: true,
+            is_active: false,
+            ended_at: item.ended_at || now.toISOString(),
+            duration_minutes: durationMinutes,
+            completed_at: now.toISOString(),
+          })
+          .eq("id", item.id)
+          .eq("shop_id", tekmetricShopId);
 
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error("Error clearing item:", errorText);
+        if (error) {
+          console.error("Error clearing item:", error);
         }
       }
 
@@ -273,6 +237,7 @@ export default function Home() {
           <div className="mt-2 text-sm text-gray-600">
             <div>Shop: {shopName || "Unknown Shop"}</div>
             <div>User: {userEmail}</div>
+            <div>Tekmetric Shop ID: {tekmetricShopId ?? "Unknown"}</div>
           </div>
         </div>
 
