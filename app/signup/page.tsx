@@ -79,7 +79,7 @@ export default function SignupPage() {
           </label>
           <input
             type="number"
-            placeholder="4 Digit # from Tekmetric URL"
+            placeholder="under shop settings - shop profile #"
             value={tekmetricShopId}
             onChange={(e) => setTekmetricShopId(e.target.value)}
             className="w-full rounded border border-gray-300 p-3 text-gray-900"

@@ -140,6 +140,7 @@ export default function SettingsPage() {
           </h2>
           <p className="mb-4 text-sm text-gray-500">
             Paste this URL into your Tekmetric webhook settings.
+            <br />
             Tekmetric - Settings - Integrations - Webhooks
 
           </p>
