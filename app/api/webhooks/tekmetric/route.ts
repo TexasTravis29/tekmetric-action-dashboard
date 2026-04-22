@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       let durationMinutes: number | null = null;
 
       if (activeRow.started_at) {
-        const startedMs = new Date(activeRow.started_at).getTime();
+        const startedMs = new Date(activeRow.started_at + "Z").getTime();
         const endedMs = new Date(eventTime).getTime();
 
         if (Number.isFinite(startedMs) && Number.isFinite(endedMs)) {
