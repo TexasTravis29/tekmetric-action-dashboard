@@ -215,7 +215,7 @@ export default function Home() {
             alt="WrenchOps"
             className="h-20 w-auto"
           />
-          <p className="mt-1 text-sm font-medium text-gray-500 uppercase tracking-widest">
+          <p className="mt-1 text-sm font-bold text-gray-800 uppercase tracking-widest">
             Shop Activity Dashboard
           </p>
           <div className="mt-2 text-sm text-gray-600">
