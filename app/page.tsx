@@ -198,48 +198,54 @@ export default function Home() {
 
   if (pageLoading) {
     return (
-      <main className="min-h-screen bg-gray-100 p-6">
-        <div className="mx-auto max-w-5xl rounded-lg bg-white p-6 shadow">
-          <p className="text-gray-700">Loading dashboard...</p>
+      <main className="min-h-screen bg-gray-100">
+        <div className="bg-slate-800 px-6 py-3">
+          <img src="/WrenchOps_Logo.png" alt="WrenchOps" className="h-20 w-auto" />
+        </div>
+        <div className="bg-slate-600 py-2 text-center">
+          <p className="text-sm font-bold text-white uppercase tracking-widest">
+            Shop Activity Dashboard
+          </p>
+        </div>
+        <div className="p-6">
+          <div className="mx-auto max-w-5xl rounded-lg bg-white p-6 shadow">
+            <p className="text-gray-700">Loading dashboard...</p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
+    <main className="min-h-screen bg-gray-100">
+
+      {/* Banner 1 - Main Header */}
+      <div className="bg-slate-800 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+
+        {/* Left: Logo */}
+        <div className="flex-shrink-0">
           <img
             src="/WrenchOps_Logo.png"
             alt="WrenchOps"
-            className="h-40 w-auto"
+            className="h-20 w-auto"
           />
-          <p className="mt-1 text-sm font-bold text-gray-800 uppercase tracking-widest">
-            Shop Activity Dashboard
-          </p>
-          <div className="mt-2 text-sm text-gray-600">
-            <div>Shop: {shopName || "Unknown Shop"}</div>
-            <div>User: {userEmail}</div>
-            <div>Tekmetric Shop ID: {tekmetricShopId ?? "Unknown"}</div>
-          </div>
         </div>
 
+        {/* Center: Shop Info */}
+        <div className="flex flex-col text-sm text-slate-300">
+          <div><span className="font-semibold text-white">Shop:</span> {shopName || "Unknown Shop"}</div>
+          <div><span className="font-semibold text-white">User:</span> {userEmail}</div>
+          <div><span className="font-semibold text-white">Tekmetric Shop ID:</span> {tekmetricShopId ?? "Unknown"}</div>
+        </div>
+
+        {/* Right: Buttons */}
         <div className="flex gap-3">
-          <Link
-            href="/report"
-            className="rounded bg-slate-700 px-4 py-2 text-white hover:bg-slate-800"
-          >
+          <Link href="/report" className="rounded bg-slate-600 px-4 py-2 text-white hover:bg-slate-500">
             Reports
           </Link>
-
-          <Link
-            href="/settings"
-            className="rounded bg-slate-700 px-4 py-2 text-white hover:bg-slate-800"
-          >
+          <Link href="/settings" className="rounded bg-slate-600 px-4 py-2 text-white hover:bg-slate-500">
             Settings
           </Link>
-
           <button
             onClick={clearAll}
             disabled={loading}
@@ -247,98 +253,102 @@ export default function Home() {
           >
             {loading ? "Clearing..." : "Clear All"}
           </button>
-
           <button
             onClick={handleLogout}
-            className="rounded bg-gray-700 px-4 py-2 text-white hover:bg-gray-800"
+            className="rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-500"
           >
             Logout
           </button>
         </div>
       </div>
 
-      <div className="mb-6 flex gap-3">
-        <button
-          onClick={() => setFilter("pending")}
-          className={`rounded px-4 py-2 text-white ${
-            filter === "pending" ? "bg-blue-500" : "bg-blue-300"
-          }`}
-        >
-          Pending
-        </button>
-
-        <button
-          onClick={() => setFilter("completed")}
-          className={`rounded px-4 py-2 text-white ${
-            filter === "completed" ? "bg-gray-500" : "bg-gray-300"
-          }`}
-        >
-          Completed
-        </button>
+      {/* Banner 2 - Page Title */}
+      <div className="bg-slate-600 py-2 text-center">
+        <p className="text-sm font-bold text-white uppercase tracking-widest">
+          Shop Activity Dashboard
+        </p>
       </div>
 
-      <div className="space-y-4">
-        {filteredActions.map((action) => (
-          <div
-            key={action.id}
-            className="flex items-start justify-between rounded-lg bg-white p-4 shadow"
+      {/* Page Content */}
+      <div className="p-6">
+
+        <div className="mb-6 flex gap-3">
+          <button
+            onClick={() => setFilter("pending")}
+            className={`rounded px-4 py-2 text-white ${
+              filter === "pending" ? "bg-blue-500" : "bg-blue-300"
+            }`}
           >
-            <div>
-              <div className="text-lg font-semibold text-gray-800">
-                RO #{action.ro}
-              </div>
+            Pending
+          </button>
+          <button
+            onClick={() => setFilter("completed")}
+            className={`rounded px-4 py-2 text-white ${
+              filter === "completed" ? "bg-gray-500" : "bg-gray-300"
+            }`}
+          >
+            Completed
+          </button>
+        </div>
 
-              <div className="mt-1 text-sm text-blue-600">
-                {action.custom_label || "No Label"}
-              </div>
-
-              <div className="mt-2 text-sm text-gray-700">
-                {action.event_text || "No Event Text"}
-              </div>
-
-              <div className="mt-2 text-xs text-gray-500">
-                Updated:{" "}
-                {action.updated_at
-                  ? new Date(action.updated_at).toLocaleString()
-                  : "No Updated Date"}
-              </div>
-
-              {action.duration_minutes !== null && (
-                <div className="mt-1 text-xs text-emerald-600">
-                  Minutes in label: {action.duration_minutes}
+        <div className="space-y-4">
+          {filteredActions.map((action) => (
+            <div
+              key={action.id}
+              className="flex items-start justify-between rounded-lg bg-white p-4 shadow"
+            >
+              <div>
+                <div className="text-lg font-semibold text-gray-800">
+                  RO #{action.ro}
                 </div>
-              )}
-
-              {action.completed_at && (
-                <div className="mt-1 text-xs text-gray-500">
-                  Completed: {new Date(action.completed_at).toLocaleString()}
+                <div className="mt-1 text-sm text-blue-600">
+                  {action.custom_label || "No Label"}
                 </div>
+                <div className="mt-2 text-sm text-gray-700">
+                  {action.event_text || "No Event Text"}
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  Updated:{" "}
+                  {action.updated_at
+                    ? new Date(action.updated_at).toLocaleString()
+                    : "No Updated Date"}
+                </div>
+                {action.duration_minutes !== null && (
+                  <div className="mt-1 text-xs text-emerald-600">
+                    Minutes in label: {action.duration_minutes}
+                  </div>
+                )}
+                {action.completed_at && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    Completed: {new Date(action.completed_at).toLocaleString()}
+                  </div>
+                )}
+              </div>
+
+              {!action.is_completed ? (
+                <button
+                  onClick={() => markDone(action)}
+                  className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+                >
+                  Done
+                </button>
+              ) : (
+                <button
+                  onClick={() => markPending(action.id)}
+                  className="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
+                >
+                  Reopen
+                </button>
               )}
             </div>
+          ))}
 
-            {!action.is_completed ? (
-              <button
-                onClick={() => markDone(action)}
-                className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-              >
-                Done
-              </button>
-            ) : (
-              <button
-                onClick={() => markPending(action.id)}
-                className="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
-              >
-                Reopen
-              </button>
-            )}
-          </div>
-        ))}
-
-        {!filteredActions.length && (
-          <div className="rounded-lg bg-white p-6 text-center text-gray-500 shadow">
-            No action items found for this shop.
-          </div>
-        )}
+          {!filteredActions.length && (
+            <div className="rounded-lg bg-white p-6 text-center text-gray-500 shadow">
+              No action items found for this shop.
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
