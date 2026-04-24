@@ -213,7 +213,7 @@ export default function Home() {
           <img
             src="/WrenchOps_Logo.png"
             alt="WrenchOps"
-            className="h-20 w-auto"
+            className="h-40 w-auto"
           />
           <p className="mt-1 text-sm font-bold text-gray-800 uppercase tracking-widest">
             Shop Activity Dashboard
