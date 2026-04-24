@@ -40,7 +40,7 @@ type LabelSortKey = "label" | "count" | "totalMinutes" | "avgMinutes";
 type LabelSortDirection = "asc" | "desc";
 type RoSortKey = "ro" | "label" | "started_at" | "ended_at" | "duration_minutes";
 
-const MAX_REASONABLE_MINUTES = 60 * 24 * 30; // 30 days
+const MAX_REASONABLE_MINUTES = 60 * 24 * 30;
 
 const normalizeLabel = (label: string | null | undefined) => {
   const cleaned = (label || "No Label").trim().replace(/\s+/g, " ");
@@ -499,239 +499,208 @@ export default function ReportPage() {
 
   if (pageLoading) {
     return (
-      <main className="min-h-screen bg-gray-100 p-6">
-        <div className="mx-auto max-w-7xl rounded-lg bg-white p-6 shadow">
-          <p className="text-gray-700">Loading reports...</p>
+      <main className="min-h-screen bg-gray-100">
+        <div className="bg-slate-800 px-6 py-3">
+          <img src="/WrenchOps_Logo.png" alt="WrenchOps" className="h-20 w-auto" />
+        </div>
+        <div className="bg-slate-600 py-2 text-center">
+          <p className="text-sm font-bold text-white uppercase tracking-widest">Reports</p>
+        </div>
+        <div className="p-6">
+          <div className="mx-auto max-w-7xl rounded-lg bg-white p-6 shadow">
+            <p className="text-gray-700">Loading reports...</p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-800">Reports</h1>
-          <div className="mt-2 text-sm text-gray-600">
-            <div>Shop: {shopName || "Unknown Shop"}</div>
-            <div>User: {userEmail}</div>
-            <div>Tekmetric Shop ID: {tekmetricShopId ?? "Unknown"}</div>
-          </div>
+    <main className="min-h-screen bg-gray-100">
+
+      {/* Banner 1 - Main Header */}
+      <div className="bg-slate-800 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+
+        {/* Left: Logo */}
+        <div className="flex-shrink-0">
+          <img src="/WrenchOps_Logo.png" alt="WrenchOps" className="h-20 w-auto" />
         </div>
 
+        {/* Center: Shop Info */}
+        <div className="flex flex-col text-sm text-slate-300">
+          <div><span className="font-semibold text-white">Shop:</span> {shopName || "Unknown Shop"}</div>
+          <div><span className="font-semibold text-white">User:</span> {userEmail}</div>
+          <div><span className="font-semibold text-white">Tekmetric Shop ID:</span> {tekmetricShopId ?? "Unknown"}</div>
+        </div>
+
+        {/* Right: Buttons */}
         <div className="flex gap-3">
-          <Link href="/" className="rounded bg-slate-700 px-4 py-2 text-white hover:bg-slate-800">
+          <Link href="/" className="rounded bg-slate-600 px-4 py-2 text-white hover:bg-slate-500">
             Back to Dashboard
           </Link>
           <button onClick={exportCsv} className="rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700">
             Export CSV
           </button>
-          <Link href="/settings" className="round bg-slate-700 px-4 py-2 text-white hover:bg-slate-800">
+          <Link href="/settings" className="rounded bg-slate-600 px-4 py-2 text-white hover:bg-slate-500">
             Settings
           </Link>
-          <button onClick={handleLogout} className="rounded bg-gray-700 px-4 py-2 text-white hover:bg-gray-800">
+          <button onClick={handleLogout} className="rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-500">
             Logout
           </button>
         </div>
       </div>
 
-      <div className="mb-6 rounded-lg bg-white p-4 shadow">
-        <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-800">RO Search</label>
-            <input
-              type="text"
-              value={roSearch}
-              onChange={(e) => setRoSearch(e.target.value)}
-              placeholder="Search RO"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
-            />
+      {/* Banner 2 - Page Title */}
+      <div className="bg-slate-600 py-2 text-center">
+        <p className="text-sm font-bold text-white uppercase tracking-widest">Reports</p>
+      </div>
+
+      {/* Page Content */}
+      <div className="p-6">
+
+        <div className="mb-6 rounded-lg bg-white p-4 shadow">
+          <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-gray-800">RO Search</label>
+              <input
+                type="text"
+                value={roSearch}
+                onChange={(e) => setRoSearch(e.target.value)}
+                placeholder="Search RO"
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-gray-800">Label</label>
+              <select
+                value={selectedLabel}
+                onChange={(e) => setSelectedLabel(e.target.value)}
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              >
+                <option value="all">All Labels</option>
+                {allLabels.map((label) => (
+                  <option key={label} value={label}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-gray-800">Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-gray-800">End Date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-800">Label</label>
-            <select
-              value={selectedLabel}
-              onChange={(e) => setSelectedLabel(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
-            >
-              <option value="all">All Labels</option>
-              {allLabels.map((label) => (
-                <option key={label} value={label}>{label}</option>
-              ))}
-            </select>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button onClick={() => applyPreset("today")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">Today</button>
+            <button onClick={() => applyPreset("yesterday")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">Yesterday</button>
+            <button onClick={() => applyPreset("last7")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">Last 7 Days</button>
+            <button onClick={() => applyPreset("last30")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">Last 30 Days</button>
+            <button onClick={() => applyPreset("thisMonth")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">This Month</button>
+            <button onClick={clearFilters} className="rounded bg-gray-500 px-3 py-2 text-sm font-medium text-white hover:bg-gray-600">Clear Filters</button>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-800">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
-            />
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded border border-gray-200 bg-gray-50 p-3">
+              <p className="text-sm text-gray-600">Filtered Rows</p>
+              <p className="text-2xl font-bold text-gray-900">{filteredRows.length}</p>
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 p-3">
+              <p className="text-sm text-gray-600">Current Avg Minutes</p>
+              <p className="text-2xl font-bold text-gray-900">{formatMinutes(currentAverageMinutes)}</p>
+            </div>
+            <div className="rounded border border-gray-200 bg-gray-50 p-3">
+              <p className="text-sm text-gray-600">Previous Period Avg</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {previousPeriodRows.length ? formatMinutes(previousAverageMinutes) : "—"}
+              </p>
+            </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-800">End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
-            />
-          </div>
-        </div>
-
-        <div className="mb-4 flex flex-wrap gap-2">
-          <button onClick={() => applyPreset("today")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">Today</button>
-          <button onClick={() => applyPreset("yesterday")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">Yesterday</button>
-          <button onClick={() => applyPreset("last7")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">Last 7 Days</button>
-          <button onClick={() => applyPreset("last30")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">Last 30 Days</button>
-          <button onClick={() => applyPreset("thisMonth")} className="rounded bg-blue-500 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">This Month</button>
-          <button onClick={clearFilters} className="rounded bg-gray-500 px-3 py-2 text-sm font-medium text-white hover:bg-gray-600">Clear Filters</button>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded border border-gray-200 bg-gray-50 p-3">
-            <p className="text-sm text-gray-600">Filtered Rows</p>
-            <p className="text-2xl font-bold text-gray-900">{filteredRows.length}</p>
-          </div>
-          <div className="rounded border border-gray-200 bg-gray-50 p-3">
-            <p className="text-sm text-gray-600">Current Avg Minutes</p>
-            <p className="text-2xl font-bold text-gray-900">{formatMinutes(currentAverageMinutes)}</p>
-          </div>
-          <div className="rounded border border-gray-200 bg-gray-50 p-3">
-            <p className="text-sm text-gray-600">Previous Period Avg</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {previousPeriodRows.length ? formatMinutes(previousAverageMinutes) : "—"}
+          <div className="mt-4">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-semibold">{filteredRows.length}</span> filtered valid tracked rows out of{" "}
+              <span className="font-semibold">{validRows.length}</span> valid rows and{" "}
+              <span className="font-semibold">{rows.length}</span> total rows.
             </p>
+            {comparisonText && (
+              <p className="mt-2 text-sm font-medium text-gray-800">{comparisonText}</p>
+            )}
           </div>
         </div>
 
-        <div className="mt-4">
-          <p className="text-sm text-gray-700">
-            Showing <span className="font-semibold">{filteredRows.length}</span> filtered valid tracked rows out of{" "}
-            <span className="font-semibold">{validRows.length}</span> valid rows and{" "}
-            <span className="font-semibold">{rows.length}</span> total rows.
-          </p>
-          {comparisonText && (
-            <p className="mt-2 text-sm font-medium text-gray-800">{comparisonText}</p>
-          )}
+        <div className="mb-6 flex gap-3">
+          <button
+            onClick={() => setView("ro")}
+            className={`rounded px-4 py-2 text-white ${view === "ro" ? "bg-blue-500" : "bg-blue-300"}`}
+          >
+            By RO
+          </button>
+          <button
+            onClick={() => setView("label")}
+            className={`rounded px-4 py-2 text-white ${view === "label" ? "bg-gray-600" : "bg-gray-400"}`}
+          >
+            By Label
+          </button>
         </div>
-      </div>
 
-      <div className="mb-6 flex gap-3">
-        <button
-          onClick={() => setView("ro")}
-          className={`rounded px-4 py-2 text-white ${view === "ro" ? "bg-blue-500" : "bg-blue-300"}`}
-        >
-          By RO
-        </button>
-        <button
-          onClick={() => setView("label")}
-          className={`rounded px-4 py-2 text-white ${view === "label" ? "bg-gray-600" : "bg-gray-400"}`}
-        >
-          By Label
-        </button>
-      </div>
-
-      {view === "ro" ? (
-        <div className="overflow-x-auto rounded-lg bg-white shadow">
-          <table className="min-w-full text-sm text-gray-900">
-            <thead className="bg-slate-100 text-left">
-              <tr>
-                <th className="px-4 py-3 font-semibold">
-                  <button onClick={() => handleRoSort("ro")} className="font-semibold text-gray-900 hover:text-blue-600">
-                    RO{roSortIndicator("ro")}
-                  </button>
-                </th>
-                <th className="px-4 py-3 font-semibold">
-                  <button onClick={() => handleRoSort("label")} className="font-semibold text-gray-900 hover:text-blue-600">
-                    Label{roSortIndicator("label")}
-                  </button>
-                </th>
-                <th className="px-4 py-3 font-semibold">
-                  <button onClick={() => handleRoSort("started_at")} className="font-semibold text-gray-900 hover:text-blue-600">
-                    Started{roSortIndicator("started_at")}
-                  </button>
-                </th>
-                <th className="px-4 py-3 font-semibold">
-                  <button onClick={() => handleRoSort("ended_at")} className="font-semibold text-gray-900 hover:text-blue-600">
-                    Ended{roSortIndicator("ended_at")}
-                  </button>
-                </th>
-                <th className="px-4 py-3 font-semibold">
-                  <button onClick={() => handleRoSort("duration_minutes")} className="font-semibold text-gray-900 hover:text-blue-600">
-                    Minutes{roSortIndicator("duration_minutes")}
-                  </button>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {roRows.map((row, index) => (
-                <tr key={`${row.ro}-${row.label}-${index}`} className="border-t">
-                  <td className="px-4 py-3">{row.ro}</td>
-                  <td className="px-4 py-3">{row.label}</td>
-                  <td className="px-4 py-3">
-                    {row.started_at ? new Date(row.started_at).toLocaleString() : ""}
-                  </td>
-                  <td className="px-4 py-3">
-                    {row.ended_at ? new Date(row.ended_at).toLocaleString() : ""}
-                  </td>
-                  <td className="px-4 py-3">{row.duration_minutes ?? ""}</td>
-                </tr>
-              ))}
-              {!roRows.length && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
-                    No rows match the current filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="space-y-6">
+        {view === "ro" ? (
           <div className="overflow-x-auto rounded-lg bg-white shadow">
             <table className="min-w-full text-sm text-gray-900">
               <thead className="bg-slate-100 text-left">
                 <tr>
                   <th className="px-4 py-3 font-semibold">
-                    <button onClick={() => handleLabelSort("label")} className="font-semibold text-gray-900 hover:text-blue-600">
-                      Label{sortIndicator("label")}
+                    <button onClick={() => handleRoSort("ro")} className="font-semibold text-gray-900 hover:text-blue-600">
+                      RO{roSortIndicator("ro")}
                     </button>
                   </th>
                   <th className="px-4 py-3 font-semibold">
-                    <button onClick={() => handleLabelSort("count")} className="font-semibold text-gray-900 hover:text-blue-600">
-                      Count{sortIndicator("count")}
+                    <button onClick={() => handleRoSort("label")} className="font-semibold text-gray-900 hover:text-blue-600">
+                      Label{roSortIndicator("label")}
                     </button>
                   </th>
                   <th className="px-4 py-3 font-semibold">
-                    <button onClick={() => handleLabelSort("totalMinutes")} className="font-semibold text-gray-900 hover:text-blue-600">
-                      Total Minutes{sortIndicator("totalMinutes")}
+                    <button onClick={() => handleRoSort("started_at")} className="font-semibold text-gray-900 hover:text-blue-600">
+                      Started{roSortIndicator("started_at")}
                     </button>
                   </th>
                   <th className="px-4 py-3 font-semibold">
-                    <button onClick={() => handleLabelSort("avgMinutes")} className="font-semibold text-gray-900 hover:text-blue-600">
-                      Avg Minutes{sortIndicator("avgMinutes")}
+                    <button onClick={() => handleRoSort("ended_at")} className="font-semibold text-gray-900 hover:text-blue-600">
+                      Ended{roSortIndicator("ended_at")}
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 font-semibold">
+                    <button onClick={() => handleRoSort("duration_minutes")} className="font-semibold text-gray-900 hover:text-blue-600">
+                      Minutes{roSortIndicator("duration_minutes")}
                     </button>
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {labelRows.map((row) => (
-                  <tr key={row.label} className="border-t">
+                {roRows.map((row, index) => (
+                  <tr key={`${row.ro}-${row.label}-${index}`} className="border-t">
+                    <td className="px-4 py-3">{row.ro}</td>
                     <td className="px-4 py-3">{row.label}</td>
-                    <td className="px-4 py-3">{row.count}</td>
-                    <td className="px-4 py-3">{formatMinutes(row.totalMinutes)}</td>
-                    <td className="px-4 py-3">{formatMinutes(row.avgMinutes)}</td>
+                    <td className="px-4 py-3">{row.started_at ? new Date(row.started_at).toLocaleString() : ""}</td>
+                    <td className="px-4 py-3">{row.ended_at ? new Date(row.ended_at).toLocaleString() : ""}</td>
+                    <td className="px-4 py-3">{row.duration_minutes ?? ""}</td>
                   </tr>
                 ))}
-                {!labelRows.length && (
+                {!roRows.length && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-gray-500">
+                    <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
                       No rows match the current filters.
                     </td>
                   </tr>
@@ -739,31 +708,79 @@ export default function ReportPage() {
               </tbody>
             </table>
           </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="overflow-x-auto rounded-lg bg-white shadow">
+              <table className="min-w-full text-sm text-gray-900">
+                <thead className="bg-slate-100 text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">
+                      <button onClick={() => handleLabelSort("label")} className="font-semibold text-gray-900 hover:text-blue-600">
+                        Label{sortIndicator("label")}
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 font-semibold">
+                      <button onClick={() => handleLabelSort("count")} className="font-semibold text-gray-900 hover:text-blue-600">
+                        Count{sortIndicator("count")}
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 font-semibold">
+                      <button onClick={() => handleLabelSort("totalMinutes")} className="font-semibold text-gray-900 hover:text-blue-600">
+                        Total Minutes{sortIndicator("totalMinutes")}
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 font-semibold">
+                      <button onClick={() => handleLabelSort("avgMinutes")} className="font-semibold text-gray-900 hover:text-blue-600">
+                        Avg Minutes{sortIndicator("avgMinutes")}
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {labelRows.map((row) => (
+                    <tr key={row.label} className="border-t">
+                      <td className="px-4 py-3">{row.label}</td>
+                      <td className="px-4 py-3">{row.count}</td>
+                      <td className="px-4 py-3">{formatMinutes(row.totalMinutes)}</td>
+                      <td className="px-4 py-3">{formatMinutes(row.avgMinutes)}</td>
+                    </tr>
+                  ))}
+                  {!labelRows.length && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-6 text-center text-gray-500">
+                        No rows match the current filters.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-2xl font-bold text-gray-800">Average Time by Label</h2>
-            <div className="space-y-4">
-              {labelRows.map((row) => {
-                const widthPercent = maxAvg > 0 ? (row.avgMinutes / maxAvg) * 100 : 0;
-                return (
-                  <div key={row.label}>
-                    <div className="mb-1 flex justify-between text-sm font-medium text-gray-900">
-                      <span>{row.label}</span>
-                      <span>{formatMinutes(row.avgMinutes)} min</span>
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h2 className="mb-4 text-2xl font-bold text-gray-800">Average Time by Label</h2>
+              <div className="space-y-4">
+                {labelRows.map((row) => {
+                  const widthPercent = maxAvg > 0 ? (row.avgMinutes / maxAvg) * 100 : 0;
+                  return (
+                    <div key={row.label}>
+                      <div className="mb-1 flex justify-between text-sm font-medium text-gray-900">
+                        <span>{row.label}</span>
+                        <span>{formatMinutes(row.avgMinutes)} min</span>
+                      </div>
+                      <div className="h-6 w-full rounded bg-gray-200">
+                        <div className="h-6 rounded bg-blue-500" style={{ width: `${widthPercent}%` }} />
+                      </div>
                     </div>
-                    <div className="h-6 w-full rounded bg-gray-200">
-                      <div className="h-6 rounded bg-blue-500" style={{ width: `${widthPercent}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-              {!labelRows.length && (
-                <p className="text-sm text-gray-500">No label data available for the current filters.</p>
-              )}
+                  );
+                })}
+                {!labelRows.length && (
+                  <p className="text-sm text-gray-500">No label data available for the current filters.</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </main>
   );
 }
