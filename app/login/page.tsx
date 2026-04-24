@@ -35,48 +35,53 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <form
-        onSubmit={handleLogin}
-        className="w-full max-w-md space-y-4 rounded-2xl border p-6 shadow"
+  <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-6">
+    <img
+      src="/WrenchOps_Logo.png"
+      alt="WrenchOps"
+      className="mb-6 h-32 w-auto"
+    />
+    <form
+      onSubmit={handleLogin}
+      className="w-full max-w-md space-y-4 rounded-2xl border bg-white p-6 shadow"
+    >
+      <h1 className="text-2xl font-bold text-gray-800">Login</h1>
+
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="w-full rounded border p-3"
+        required
+      />
+
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="w-full rounded border p-3"
+        required
+      />
+
+      {error && <p className="text-red-600 text-sm">{error}</p>}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full rounded bg-slate-800 px-4 py-3 text-white disabled:opacity-50 hover:bg-slate-700"
       >
-        <h1 className="text-2xl font-bold">Login</h1>
+        {loading ? "Logging in..." : "Login"}
+      </button>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded border p-3"
-          required
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded border p-3"
-          required
-        />
-
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-black px-4 py-3 text-white disabled:opacity-50"
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-
-        <p className="text-sm text-gray-600">
-          Need an account?{" "}
-          <Link href="/signup" className="underline">
-            Create one
-          </Link>
-        </p>
-      </form>
-    </main>
-  );
+      <p className="text-sm text-gray-600">
+        Need an account?{" "}
+        <Link href="/signup" className="underline">
+          Create one
+        </Link>
+      </p>
+    </form>
+  </main>
+);
 }
