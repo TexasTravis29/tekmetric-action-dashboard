@@ -39,7 +39,7 @@ export default function LoginPage() {
     <img
       src="/WrenchOps_Logo.png"
       alt="WrenchOps"
-      className="mb-6 h-32 w-auto"
+      className="mb-6 h-64 w-auto"
     />
     <form
       onSubmit={handleLogin}
@@ -52,7 +52,7 @@ export default function LoginPage() {
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded border p-3"
+        className="w-full rounded border p-3 placeholder-gray-600 text-gray-900"
         required
       />
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full rounded border p-3"
+        className="w-full rounded border p-3 placeholder-gray-600 text-gray-900"
         required
       />
 
