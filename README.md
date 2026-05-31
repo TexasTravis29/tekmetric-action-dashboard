@@ -3,6 +3,8 @@
 
 A live action item dashboard for auto repair shops that connects directly to Tekmetric.
 
+Sign in here: https://wrench-ops.vercel.app/login
+
 ## The Problem It Solves
 
 When a repair order moves through different stages in Tekmetric — getting a label like "Waiting on Parts" or "Ready for Pickup" — that information stays buried inside Tekmetric. Your team has to actively go look for what needs attention. Further more there is no reports for this. 
