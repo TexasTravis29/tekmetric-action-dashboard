@@ -1,5 +1,5 @@
 
-# Tekmetric Action Center
+# Cycle time tracker for Tekmetric users.
 
 A live action item dashboard for auto repair shops that connects directly to Tekmetric.
 
